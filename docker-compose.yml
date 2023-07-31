@@ -5,7 +5,7 @@ services:
     container_name: mysql
     restart: always
     build:
-      context: ./build/mysql
+      context: .
       dockerfile: ./build/mysql/Dockerfile
     env_file:
       - .env
