@@ -16,6 +16,6 @@ services:
     volumes:
       - ./logs/:/home/nacos/logs
     networks:
-      - broker
+      - default
     ports:
       - "8848:8848"
