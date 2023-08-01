@@ -1,5 +1,10 @@
 version: "3"
 
+networks:
+  default:
+    external:
+      name: broker
+
 services:
   mysql:
     container_name: mysql
@@ -11,6 +16,8 @@ services:
       - .env
     volumes:
       - ./mysql:/var/lib/mysql
+    networks:
+      - broker
     ports:
       - "3306:3306"
     healthcheck:
