@@ -11,8 +11,11 @@ services:
     build:
       context: .
       dockerfile: ./build/mysql/Dockerfile
-    env_file:
-      - .env
+    environment:
+      - MYSQL_ROOT_PASSWORD=nacos
+      - MYSQL_DATABASE=nacos
+      - MYSQL_USER=nacos
+      - MYSQL_PASSWORD=nacos
     volumes:
       - ./mysql:/var/lib/mysql
     networks:
@@ -29,8 +32,16 @@ services:
     image: nacos/nacos-server:v2.1.1
     restart: always
     container_name: nacos
-    env_file:
-      - .env
+    environment:
+      - PREFER_HOST_MODE=ip
+      - MODE=standalone
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=mysql
+      - MYSQL_SERVICE_DB_NAME=nacos
+      - MYSQL_SERVICE_PORT=3306
+      - MYSQL_SERVICE_USER=nacos
+      - MYSQL_SERVICE_PASSWORD=nacos
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false
     volumes:
       - ./logs/:/home/nacos/logs
     ports:
