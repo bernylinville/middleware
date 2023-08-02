@@ -8,6 +8,11 @@
     - role: geerlingguy.docker
 
   tasks:
+    - name: Install Packages
+      ansible.builtin.apt:
+        name: python3-docker
+        install_recommends: false
+
     - name: Create broker network
       community.docker.docker_network:
         name: broker
