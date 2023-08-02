@@ -1,4 +1,4 @@
-FROM mysql:8.0.34
+FROM mysql:8
 ADD build/mysql/nacos-mysql.sql /docker-entrypoint-initdb.d/nacos-mysql.sql
 RUN chown -R mysql:mysql /docker-entrypoint-initdb.d/nacos-mysql.sql
 EXPOSE 3306
