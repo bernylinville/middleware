@@ -16,6 +16,7 @@ services:
         - "broker/mysql:8"
     image: broker/mysql:8
     environment:
+      - TZ=Asia/Shanghai
       - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=nacos
     volumes:
@@ -36,6 +37,7 @@ services:
     container_name: nacos
     privileged: true
     environment:
+      - TZ=Asia/Shanghai
       - PREFER_HOST_MODE=ip
       - MODE=standalone
       - SPRING_DATASOURCE_PLATFORM=mysql
