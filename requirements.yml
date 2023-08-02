@@ -1,3 +1,5 @@
 ---
 roles:
   - name: geerlingguy.docker
+  - name: community.mysql
+  - name: geerlingguy.mysql
