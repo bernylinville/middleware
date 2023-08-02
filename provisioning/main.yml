@@ -9,7 +9,7 @@
 
   tasks:
     - name: Install Packages
-      ansible.builtin.apt:
+      ansible.builtin.yum:
         name: python3-docker
         install_recommends: false
 
