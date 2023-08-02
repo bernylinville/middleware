@@ -16,9 +16,10 @@ services:
         - "broker/mysql:8"
     image: broker/mysql:8
     environment:
-      - TZ=Asia/Shanghai
       - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=nacos
+      - MYSQL_USER=nacos
+      - MYSQL_PASSWORD=nacos
     volumes:
       - ./mysql:/var/lib/mysql
     networks:
@@ -44,9 +45,9 @@ services:
       - MYSQL_SERVICE_HOST=mysql
       - MYSQL_SERVICE_DB_NAME=nacos
       - MYSQL_SERVICE_PORT=3306
-      - MYSQL_SERVICE_USER=root
-      - MYSQL_SERVICE_PASSWORD=123456
-      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false
+      - MYSQL_SERVICE_USER=nacos
+      - MYSQL_SERVICE_PASSWORD=nacos
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&serverTimezone=UTC
     volumes:
       - ./logs/:/home/nacos/logs
     networks:
