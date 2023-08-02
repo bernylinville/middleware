@@ -10,7 +10,10 @@
   tasks:
     - name: Install Packages
       ansible.builtin.yum:
-        name: python-docker
+        name:
+          - python-docker
+          - git
+          - vim
         state: present
 
     - name: Create broker network
