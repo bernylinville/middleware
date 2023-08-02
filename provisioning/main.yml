@@ -10,7 +10,7 @@
   tasks:
     - name: Install Packages
       ansible.builtin.yum:
-        name: python36-docker
+        name: python-docker
         state: present
 
     - name: Create broker network
