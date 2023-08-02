@@ -11,7 +11,7 @@
     - name: Install Packages
       ansible.builtin.yum:
         name: python3-docker
-        install_recommends: false
+        state: present
 
     - name: Create broker network
       community.docker.docker_network:
