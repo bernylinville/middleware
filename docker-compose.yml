@@ -9,7 +9,12 @@ services:
     container_name: mysql
     restart: always
     privileged: true
-    image: nacos/nacos-mysql:8.0.16
+    build:
+      context: .
+      dockerfile: ./build/mysql/Dockerfile
+      tags:
+        - "broker/mysql:8.0.34"
+    image: broker/mysql:8.0.34
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=nacos
