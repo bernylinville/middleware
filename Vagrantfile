@@ -4,7 +4,7 @@
 Vagrant.configure("2") do |config|
   # Base VM OS configuration.
   config.vm.box = "geerlingguy/centos7"
-  varnish.vm.network :private_network, ip: "192.168.56.66"
+  config.vm.network :private_network, ip: "192.168.56.66"
   config.ssh.insert_key = false
   config.vm.synced_folder '.', '/vagrant', disabled: true
 

@@ -1,40 +1,40 @@
-version: "3.8"
+version: "3"
 
-networks:
-  broker:
-    external: true
+# networks:
+#   broker:
+#     external: true
 
 services:
-  mysql:
-    container_name: mysql
-    restart: always
-    image: nacos/nacos-mysql:8.0.16
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=nacos
-      - MYSQL_USER=nacos
-      - MYSQL_PASSWORD=nacos
-    volumes:
-      - ./mysql:/var/lib/mysql
-    networks:
-      - broker
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      interval: 5s
-      timeout: 10s
-      retries: 10
+  # mysql:
+  #   container_name: mysql
+  #   restart: always
+  #   image: nacos/nacos-mysql:8.0.16
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=root
+  #     - MYSQL_DATABASE=nacos
+  #     - MYSQL_USER=nacos
+  #     - MYSQL_PASSWORD=nacos
+  #   volumes:
+  #     - ./mysql:/var/lib/mysql
+  #   networks:
+  #     - broker
+  #   ports:
+  #     - "3306:3306"
+  #   healthcheck:
+  #     test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+  #     interval: 5s
+  #     timeout: 10s
+  #     retries: 10
 
   nacos:
-    image: nacos/nacos-server:v2.1.2
+    image: nacos/nacos-server:v2.1.1
     restart: always
     container_name: nacos
     environment:
       - PREFER_HOST_MODE=ip
       - MODE=standalone
       - SPRING_DATASOURCE_PLATFORM=mysql
-      - MYSQL_SERVICE_HOST=mysql
+      - MYSQL_SERVICE_HOST=127.0.0.1
       - MYSQL_SERVICE_DB_NAME=nacos
       - MYSQL_SERVICE_PORT=3306
       - MYSQL_SERVICE_USER=nacos
@@ -42,12 +42,11 @@ services:
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false
     volumes:
       - ./logs/:/home/nacos/logs
-    networks:
-      - broker
+    network_mode: "host"
     ports:
       - "8848:8848"
       - "9848:9848"
       - "9555:9555"
-    depends_on:
-      mysql:
-        condition: service_healthy
+    # depends_on:
+    #   mysql:
+    #     condition: service_healthy
