@@ -2,7 +2,6 @@ version: "3.8"
 
 networks:
   broker:
-    external: true
 
 services:
   database1:
@@ -11,19 +10,19 @@ services:
     privileged: true
     build:
       context: .
-      dockerfile: ./build/mysql/Dockerfile
+      dockerfile: ./build/database1/Dockerfile
       tags:
-        - "broker/mysql:8"
-    image: broker/mysql:8
+        - "broker/database1:8"
+    image: broker/database1:8
     environment:
       - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=nacos
     volumes:
-      - ./mysql:/var/lib/mysql
+      - ./database1:/var/lib/mysql
     networks:
       - broker
     ports:
-      - "3306:3306"
+      - "3306"
     healthcheck:
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
       interval: 10s
@@ -62,7 +61,7 @@ services:
       - MYSQL_SERVICE_PASSWORD=123456
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
     volumes:
-      - ./nacos/logs/:/home/nacos/logs
+      - ./logs/nacos:/home/nacos/logs
     networks:
       - broker
     ports:
@@ -107,3 +106,232 @@ services:
       - "15672:15672"
     volumes:
       - "./rabbitmq/:/var/lib/rabbitmq"
+
+  # todo: stunnel
+  stunnel:
+    image: stunnel:latest
+    container_name: stunnel
+    restart: always
+    privileged: true
+    ports:
+      - "5671:5671"
+    environment:
+      - STUNNEL_SERVICE=amqp
+      - STUNNEL_ACCEPT=5671
+      - STUNNEL_CONNECT=rabbitmq:5672
+      - STUNNEL_CLIENT=yes
+      - STUNNEL_SSL_VERSION=TLSv1.2
+      - STUNNEL_VERIFY_CHAIN=yes
+      - STUNNEL_VERIFY_PEER=yes
+      - STUNNEL_CAFILE=/etc/stunnel/certs/ca.crt
+      - STUNNEL_KEY=/etc/stunnel/certs/client.key
+      - STUNNEL_CERT=/etc/stunnel/certs/client.crt
+    volumes:
+      - "./stunnel/:/etc/stunnel/certs"
+
+  database2:
+    container_name: database2
+    restart: always
+    privileged: true
+    build:
+      context: .
+      dockerfile: ./build/database2/Dockerfile
+      tags:
+        - "broker/database2:8"
+    image: broker/database2:8
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+    volumes:
+      - ./database2:/var/lib/mysql
+    networks:
+      - broker
+    ports:
+      - "3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  gateway:
+    image: gateway:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=300m
+      - JVM_XMX=300m
+      - JVM_XSS=512k
+    ports:
+      - "11000:11000"
+    networks:
+      - broker
+    volumes:
+      - "./logs/gateway:/application/omni-gateway/log"
+    depends_on:
+      - job
+      - nacos
+      - redis
+      - rabbitmq
+      - stunnel
+      - database2
+
+  account:
+    image: account:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=500m
+      - JVM_XMX=500m
+      - JVM_XSS=512k
+    networks:
+      - broker
+    volumes:
+      - "./logs/account:/application/omni-account/log"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  trading:
+    image: trading:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=500m
+      - JVM_XMX=500m
+      - JVM_XSS=512k
+    networks:
+      - broker
+    volumes:
+      - "./logs/trading:/application/omni-trading/log"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  exchange:
+    image: exchange:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=500m
+      - JVM_XMX=500m
+      - JVM_XSS=512k
+    networks:
+      - broker
+    volumes:
+      - "./logs/exchange:/application/omni-exchange/log"
+    dns:
+      - 8.8.8.8
+    secrets:
+    - source: aws_creds
+      target: /root/.aws/credentials
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  market:
+    image: market:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=500m
+      - JVM_XMX=500m
+      - JVM_XSS=512k
+    networks:
+      - broker
+    volumes:
+      - "./logs/market:/application/omni-market/log"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  user:
+    image: user:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=200m
+      - JVM_XMX=200m
+      - JVM_XSS=512k
+    networks:
+      - broker
+    volumes:
+      - "./logs/user:/application/omni-user/log"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  ws:
+    image: ws:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=256m
+      - JVM_XMX=256m
+      - JVM_XSS=512k
+    networks:
+      - broker
+    volumes:
+      - "./logs/ws:/application/omni-ws/log"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  reconciliation:
+    image: reconciliation:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=512m
+      - JVM_XMX=512m
+      - JVM_XSS=512k
+    networks:
+      - broker
+    volumes:
+      - "./logs/reconciliation:/application/omni-reconciliation/log"
+    depends_on:
+      exchange:
+        condition: service_healthy
+
+  chain:
+    image: chain:latest
+    command:
+      - --spring.profiles.active=broker
+      - --spring.cloud.nacos.server-addr=nacos:8848
+      - --spring.cloud.nacos.discovery.group=DEFAULT_GROUP
+      - --spring.cloud.nacos.config.group=DEFAULT_GROUP
+    environment:
+      - JVM_XMS=300m
+      - JVM_XMX=300m
+      - JVM_XSS=300k
+    networks:
+      - broker
+    volumes:
+      - "./logs/chain:/application/omni-chain/log"
+    depends_on:
+      gateway:
+        condition: service_healthy

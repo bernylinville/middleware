@@ -15,9 +15,3 @@
           - git
           - vim
         state: present
-
-    - name: Create broker network
-      community.docker.docker_network:
-        name: broker
-      register: result
-      until: result is succeeded
