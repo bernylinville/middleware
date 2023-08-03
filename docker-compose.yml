@@ -1,12 +1,12 @@
-version: "3"
+version: "3.8"
 
 networks:
   broker:
     external: true
 
 services:
-  mysql:
-    container_name: mysql
+  database1:
+    container_name: database1
     restart: always
     privileged: true
     build:
@@ -26,19 +26,21 @@ services:
       - "3306:3306"
     healthcheck:
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      interval: 5s
+      interval: 10s
       timeout: 10s
       retries: 10
+      start_period: 30s
 
   job:
     image: xuxueli/xxl-job-admin:2.3.0
     container_name: job
     restart: always
+    privileged: true
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
       - JAVA_OPTS=-Xmx300m
-      - PARAMS=--spring.datasource.url=jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai --spring.datasource.username=root --spring.datasource.password=123456 --spring.datasource.driver-class-name=com.mysql.jdbc.Driver --xxl.job.logretentiondays=7
+      - PARAMS=--spring.datasource.url=jdbc:mysql://database1:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai --spring.datasource.username=root --spring.datasource.password=123456 --spring.datasource.driver-class-name=com.mysql.jdbc.Driver --xxl.job.logretentiondays=7
     depends_on:
       mysql:
         condition: service_healthy
@@ -53,14 +55,14 @@ services:
       - PREFER_HOST_MODE=ip
       - MODE=standalone
       - SPRING_DATASOURCE_PLATFORM=mysql
-      - MYSQL_SERVICE_HOST=mysql
+      - MYSQL_SERVICE_HOST=database1
       - MYSQL_SERVICE_DB_NAME=nacos
       - MYSQL_SERVICE_PORT=3306
       - MYSQL_SERVICE_USER=root
       - MYSQL_SERVICE_PASSWORD=123456
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
     volumes:
-      - ./logs/:/home/nacos/logs
+      - ./nacos/logs/:/home/nacos/logs
     networks:
       - broker
     ports:
@@ -70,3 +72,38 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8848/nacos" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    container_name: redis
+    image: redis:6.2.13
+    restart: always
+    privileged: true
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: "redis-cli"
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  rabbitmq:
+    image: rabbitmq:3.9.29-management
+    container_name: rabbitmq
+    restart: always
+    privileged: true
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=/trading
+      - RABBITMQ_DEFAULT_USER=trading
+      - RABBITMQ_DEFAULT_PASS=trading_pwd
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - "./rabbitmq/:/var/lib/rabbitmq"
